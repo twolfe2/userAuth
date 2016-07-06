@@ -7,6 +7,7 @@ const request = require('request');
 
 let router = express.Router();
 
+let User = require('../models/user');
 const FACEBOOK_SECRET = process.env.FACEBOOK_SECRET;
 
 /// /api/users
@@ -23,6 +24,28 @@ const FACEBOOK_SECRET = process.env.FACEBOOK_SECRET;
 
 //   res.send();
 // })
+router.get('/profile', User.authMiddleware, (req,res) => {
+  // console.log(req.user);
+  res.send(req.user);
+
+});
+
+
+router.post('/signup', (req,res) => {
+  console.log('req.body:',req.body);
+  User.register(req.body, (err, token) => {
+    res.status(err ? 400 : 200).send(err || {token: token});
+  });
+});
+
+router.post('/login', (req,res) => {
+  // console.log('req.body:',req.body);
+  User.authenticate(req.body, (err, token) => {
+    res.status(err ? 400 : 200).send(err || {token: token});
+  });
+});
+
+
 
 router.post('/facebook', function(req, res) {
   var fields = ['id', 'email', 'first_name', 'last_name', 'link', 'name', 'location', 'birthday','gender','picture'];
@@ -38,17 +61,47 @@ router.post('/facebook', function(req, res) {
   // Step 1. Exchange authorization code for access token.
   request.get({ url: accessTokenUrl, qs: params, json: true }, function(err, response, accessToken) {
     if (response.statusCode !== 200) {
-      return res.status(500).send({ message: accessToken.error.message });
+      return res.status(400).send({ message: accessToken.error.message });
     }
 
     // Step 2. Retrieve profile information about the current user.
     request.get({ url: graphApiUrl, qs: accessToken, json: true }, function(err, response, profile) {
       if (response.statusCode !== 200) {
-        return res.status(500).send({ message: profile.error.message });
+        return res.status(400).send({ message: profile.error.message });
       }
 
       console.log('profile:',profile);
-      res.send();
+      // res.send();
+
+
+      User.findOne({facebook: profile.id}, (err,user) => {
+        if(err) return res.status(400).send(err);
+
+        if(user) {
+          //returning user
+          let token = user.generateToken();
+          //generate the token 
+          //send the token
+          res.send({token: token});
+        } else {
+          //new user
+          let newUser = new User({
+            email: profile.email,
+            displayName: profile.name,
+            profileImage: profile.picture.data.url,
+            facebook: profile.id
+          });
+
+          newUser.save((err,savedUser) => {
+            if(err) return res.status(400).send(err);
+
+            let token = savedUser.generateToken();
+          })
+          //create new user
+          //save to db
+          //respond with token
+        }
+       })
       // if (req.header('Authorization')) {
       //   User.findOne({ facebook: profile.id }, function(err, existingUser) {
       //     if (existingUser) {

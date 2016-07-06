@@ -18,7 +18,7 @@ let app = express();
 //Database setup
 let mongoose = require('mongoose');
 
-let mongoUrl = process.env.MONGODB_URI || 'mongodb://localhost/pizzadb';
+let mongoUrl = process.env.MONGODB_URI || 'mongodb://localhost/social';
 
 mongoose.connect(mongoUrl, err => {
   console.log(err ||  `MongoDB connected at ${mongoUrl}`);
@@ -44,6 +44,11 @@ app.use(cookieParser());
 app.use(express.static(path.join(__dirname, 'public')));
 
 ///// ROUTERS ///////
+
+// app.use((req,res,next) => {
+//   console.log('req.headers:', req.headers);
+//   next();
+// })
 
 app.use('/api', require('./routes/api'));
 
