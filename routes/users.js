@@ -24,10 +24,42 @@ const FACEBOOK_SECRET = process.env.FACEBOOK_SECRET;
 
 //   res.send();
 // })
-router.get('/profile', User.authMiddleware, (req,res) => {
+
+
+
+router.get('/profile', User.authorize({admin: false}), (req,res) => {
   // console.log(req.user);
   res.send(req.user);
 
+});
+
+router.get('/', User.authorize({admin: false}), (req,res) => {
+  User.find({_id: {$ne: req.user._id}}, (err, users) => {
+    res.status(err ? 400:200).send(err || users);
+  })
+})
+
+
+router.delete('/all', User.authorize({admin: true}), (req,res) => {
+  User.remove({}, err => {
+    res.status(err ? 400:200).send();
+  });
+});
+
+
+router.put('/:id/toggleAdmin', User.authorize({admin: true}), (req,res) => {
+  if(req.user._id.toString() === req.params.id) {
+    return res.status(400).send({error: 'Cannot toggle yourself'});
+  }
+  User.findById(req.params.id, (err, user) => {
+    if(err || !user) return res.status(400).send(err || {error: 'User not found'});
+
+    user.admin = !user.admin;
+
+    user.save(err => {
+      res.status(err ? 400:200).send(err);
+    });
+  });
 });
 
 
@@ -48,6 +80,9 @@ router.post('/login', (req,res) => {
 
 
 router.post('/facebook', function(req, res) {
+
+  
+
   var fields = ['id', 'email', 'first_name', 'last_name', 'link', 'name', 'location', 'birthday','gender','picture'];
   var accessTokenUrl = 'https://graph.facebook.com/v2.5/oauth/access_token';
   var graphApiUrl = 'https://graph.facebook.com/v2.5/me?fields=' + fields.join(',');
@@ -96,6 +131,7 @@ router.post('/facebook', function(req, res) {
             if(err) return res.status(400).send(err);
 
             let token = savedUser.generateToken();
+            res.send({token: token});
           })
           //create new user
           //save to db

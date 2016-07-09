@@ -14,18 +14,33 @@ let bodyParser = require('body-parser');
 
 
 let app = express();
+let server = http.createServer(app);
+let io = require('socket.io')(server);
+
+io.on('connection', function(socket) {
+  console.log('Socket Connected');
+
+  socket.on('sendMessage', function(data) {
+    console.log(data);
+    io.emit(data.id, data);
+  });
+
+  socket.on('disconnect', function() {
+    console.log('Disconnected')
+  })
+
+})
 
 //Database setup
 let mongoose = require('mongoose');
 
-let mongoUrl = process.env.MONGODB_URI || 'mongodb://localhost/social';
+let mongoUrl = process.env.MONGODB_URI || 'mongodb://localhost/testSocial';
 
 mongoose.connect(mongoUrl, err => {
   console.log(err ||  `MongoDB connected at ${mongoUrl}`);
 })
 
 
-let server = http.createServer(app);
 
 server.listen(PORT, err => {
   console.log(err || `Server listening on port: ${PORT}`);

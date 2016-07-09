@@ -11,46 +11,56 @@ let userSchema = new mongoose.Schema({
   displayName: String,
   profileImage: String,
   password: String,
+  admin: {type: Boolean, default: false},
   facebook: String, //facebook profile id
 });
 
-userSchema.statics.authMiddleware = function(req, res, next) {
-  // look at the cookie, and get the token
-  // verify the token
+userSchema.statics.authorize = function(paramsObj = {admin: false}) {
 
-  // if token is bad or absent, respond with error (not authorized)
-  // if token is good, call next
+  return function(req, res, next) {
+    // look at the cookie, and get the token
+    // verify the token
 
-  let tokenHeader = req.headers.authorization;
+    // if token is bad or absent, respond with error (not authorized)
+    // if token is good, call next
 
-  if(!tokenHeader) {
-    return res.status(401).send({error: 'Missing authorization header.'});
-  }
+    let tokenHeader = req.headers.authorization;
 
-  let token = tokenHeader.split(' ')[1];
+    if (!tokenHeader) {
+      return res.status(401).send({ error: 'Missing authorization header.' });
+    }
 
-  jwt.verify(token, JWT_SECRET, (err, payload) => {
-    if(err) return res.status(401).send(err);
+    let token = tokenHeader.split(' ')[1];
 
-    User.findById(payload._id, (err, user) => {
-      if(err || !user) return res.status(401).send(err || {error: 'User not found.'});
+    jwt.verify(token, JWT_SECRET, (err, payload) => {
+      if (err) return res.status(401).send(err);
 
-      req.user = user;
 
-      next();
+      User.findById(payload._id, (err, user) => {
+        if (err || !user) return res.status(401).send(err || { error: 'User not found.' });
+
+        //if admin required && user is not an admin
+        if(paramsObj.admin && !user.admin) {
+          return res.status(401).send({error: 'Access Denied. Must be Admin'});
+        }
+        req.user = user;
+
+        next();
+      });
     });
-  });
+  };
 };
-
 
 
 userSchema.methods.generateToken = function() {
 
   let payload = {
-    _id: this._id
+    _id: this._id,
+    email: this.email,
+    admin: this.admin
   };
 
-  let token = jwt.sign(payload, JWT_SECRET,{expiresIn: '1 day'});
+  let token = jwt.sign(payload, JWT_SECRET, { expiresIn: '1 day' });
 
   return token;
 
@@ -61,14 +71,14 @@ userSchema.statics.register = function(userObj, cb) {
   // Check that the username is not taken
   // Create a new user document
 
-  this.findOne({email: userObj.email}, (err, user) => {
-    if(err || user) return cb(err || {error: 'A user with this email already exists.'});
-    
+  this.findOne({ email: userObj.email }, (err, user) => {
+    if (err || user) return cb(err || { error: 'A user with this email already exists.' });
+
     this.create(userObj, (err, savedUser) => {
-      if(err) cb(err);
+      if (err) cb(err);
 
       let token = savedUser.generateToken();
-      cb(null,token);
+      cb(null, token);
     });
   });
 };
@@ -89,16 +99,16 @@ userSchema.statics.authenticate = function(userObj, cb) {
   // check if username and password match
   // set login state
 
-  this.findOne({email: userObj.email})
+  this.findOne({ email: userObj.email })
     .exec((err, user) => {
-      if(err) return cb(err);
+      if (err) return cb(err);
 
-      if(!user) {
-        return cb({error: 'Invalid email or password.'});
+      if (!user) {
+        return cb({ error: 'Invalid email or password.' });
       }
       //           ( password attempt,   db hash )
       bcrypt.compare(userObj.password, user.password, (err, isGood) => {
-        if(err || !isGood) return cb(err || {error: 'Invalid email or password.'});
+        if (err || !isGood) return cb(err || { error: 'Invalid email or password.' });
 
         let token = user.generateToken();
 

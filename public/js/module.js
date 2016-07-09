@@ -1,6 +1,6 @@
 'use strict';
 
-var app = angular.module('myApp', ['ui.router', 'satellizer']);
+var app = angular.module('myApp', ['ngMaterial','ui.router', 'satellizer', 'btford.socket-io']);
 
 app.config(function($authProvider) {
   $authProvider.loginUrl = '/api/users/login';
@@ -37,6 +37,27 @@ app.config(function($stateProvider, $urlRouterProvider) {
         }
       }
     })
+    .state('users', {
+      url: '/users',
+      templateUrl: '/html/users.html',
+      controller: 'usersCtrl',
+      resolve: {
+        Users: function(User) {
+          return User.getAll();
+        }
+      }
+    })
 
   $urlRouterProvider.otherwise('/');
 });
+
+
+
+app.factory('socket', function(socketFactory) {
+  let socket = socketFactory();
+
+  socket.forward('newMessage');
+  return socket;  
+});
+
+

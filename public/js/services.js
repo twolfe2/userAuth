@@ -10,4 +10,16 @@ app.service('User', function($http, $q) {
         return $q.resolve(res.data);
       })
   }
+
+
+  this.getAll = () => {
+    return $http.get('/api/users')
+      .then(res => {
+        return $q.resolve(res.data);
+      });
+  }
+  this.toggleAdmin = (id) => {
+    return $http.put(`/api/users/${id}/toggleAdmin`)
+
+  }
 });
