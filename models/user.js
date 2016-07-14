@@ -11,6 +11,7 @@ let userSchema = new mongoose.Schema({
   displayName: String,
   profileImage: String,
   password: String,
+  score: Number,
   admin: {type: Boolean, default: false},
   facebook: String, //facebook profile id
 });

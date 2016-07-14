@@ -95,7 +95,7 @@ app.controller('usersCtrl', function($scope, $rootScope,Users, User, $state,$q, 
     socket.emit('sendMessage', {id: user._id,message:$scope.message, email: $rootScope.currUser.email});
 
   }
-  console.log($rootScope.currUser._id);
+  console.log('Current user id:',$rootScope.currUser._id);
 
   socket.on(`${$rootScope.currUser._id}`, function(data){
     $scope.messages.push(data);
