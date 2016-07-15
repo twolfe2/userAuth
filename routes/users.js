@@ -3,6 +3,8 @@
 
 const express = require('express');
 const request = require('request');
+const speakeasy = require("speakeasy");
+
 
 
 let router = express.Router();
@@ -32,6 +34,18 @@ router.get('/profile', User.authorize({admin: false}), (req,res) => {
   res.send(req.user);
 
 });
+
+
+router.post('/addPhone', User.authorize({admin: false}), (req,res) => {
+  console.log('in post', req.body);
+  // console.log(req.user);
+  User.findByIdAndUpdate(req.user._id, req.body, (err, savedUser) => {
+    if(err) return res.status(400).send(err);
+    console.log(savedUser);
+    res.send();
+  });
+});
+
 
 router.get('/', User.authorize({admin: false}), (req,res) => {
   User.find({_id: {$ne: req.user._id}}, (err, users) => {

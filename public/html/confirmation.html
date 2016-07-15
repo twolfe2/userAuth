@@ -1,0 +1,11 @@
+<h1>Confirmation</h1>
+<div ng-show='sent' class="alert alert-success" role='alert'>
+  Confirmation code sent. Enter the confirmation code in the box below. 
+</div>
+
+<div>
+  <input type="text" placeholder="Enter confirmation number" ng-model='code'>
+  <button class="btn btn-success" ng-click='confirm()'>Confirm</button>
+</div>
+
+

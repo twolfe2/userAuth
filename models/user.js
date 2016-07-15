@@ -2,7 +2,12 @@
 
 const mongoose = require('mongoose');
 const jwt = require('jsonwebtoken');
-const bcrypt = require('bcryptjs')
+const bcrypt = require('bcryptjs');
+const client = require('twilio') (
+  process.env.TWILIO_ACCOUNT_SID,
+  process.env.TWILIO_AUTH_TOKEN
+);
+
 
 const JWT_SECRET = process.env.JWT_SECRET;
 
@@ -14,6 +19,8 @@ let userSchema = new mongoose.Schema({
   score: Number,
   admin: {type: Boolean, default: false},
   facebook: String, //facebook profile id
+  phone: Number,
+  isConfirmed: {type: Boolean, default: false}
 });
 
 userSchema.statics.authorize = function(paramsObj = {admin: false}) {
@@ -53,20 +60,6 @@ userSchema.statics.authorize = function(paramsObj = {admin: false}) {
 };
 
 
-userSchema.methods.generateToken = function() {
-
-  let payload = {
-    _id: this._id,
-    email: this.email,
-    admin: this.admin
-  };
-
-  let token = jwt.sign(payload, JWT_SECRET, { expiresIn: '1 day' });
-
-  return token;
-
-};
-
 userSchema.statics.register = function(userObj, cb) {
 
   // Check that the username is not taken
@@ -94,6 +87,15 @@ userSchema.pre('save', function(next) {
   });
 });
 
+userSchema.pre('save', function(next) {
+  if(!this.isModified('phone')) {
+    return next();
+  }
+
+  this.phoneConfirmed = false;
+  next();
+})
+
 userSchema.statics.authenticate = function(userObj, cb) {
 
   // try to find user document by username
@@ -118,7 +120,31 @@ userSchema.statics.authenticate = function(userObj, cb) {
     });
 };
 
+////////Methods
 
+userSchema.methods.generateToken = function() {
+
+  let payload = {
+    _id: this._id,
+    email: this.email,
+    admin: this.admin
+  };
+
+  let token = jwt.sign(payload, JWT_SECRET, { expiresIn: '1 day' });
+
+  return token;
+
+};
+
+
+userSchema.methods.sendToken = function(token, cb) {
+  client.messages.create({
+      to: this.phone.toString(),
+      from: process.env.TWILIO_PHONE_NUMBER,
+      body: `Enter the following code on the confirmation page: ${token}`
+    },cb);
+   
+};
 
 let User = mongoose.model('User', userSchema);
 module.exports = User;

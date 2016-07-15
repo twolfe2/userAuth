@@ -73,12 +73,39 @@ app.controller('registerCtrl', function($scope, $state, $auth) {
 });
 
 
+app.controller('confirmationCtrl', function($scope, Profile, User, $state) {
+  console.log('confirmationCtrl');
+  User.sendToken()
+    .then((res) => {
+      $scope.sent = true;
+    });
+
+    $scope.confirm = () => {
+      User.verifyToken($scope.code)
+      .then((res) => {
+        console.log(res);
+        console.log('token confirmed');
+        $state.go('profile');
+      });
+    };
+});
 
 
-app.controller('profileCtrl', function($scope, Profile) {
+
+app.controller('profileCtrl', function($scope, Profile, User) {
   console.log('profileCtrl!');
 
   $scope.user = Profile;
+
+  $scope.confirmNumber = () => {
+    // console.log($scope.user);
+    console.log()
+    User.addNumber($scope.user.phone)
+      .then((res) => {
+        $scope.user.phone = '';
+        console.log('number added');
+      });
+  };
 
 });
 

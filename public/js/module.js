@@ -47,6 +47,16 @@ app.config(function($stateProvider, $urlRouterProvider) {
         }
       }
     })
+    .state('confirmation', {
+      url: '/confirmation', 
+      templateUrl: '/html/confirmation.html',
+      controller: 'confirmationCtrl',
+      resolve: {
+        Profile: function(User) {
+          return User.profile();
+        }
+      }
+    })
 
   $urlRouterProvider.otherwise('/');
 });
